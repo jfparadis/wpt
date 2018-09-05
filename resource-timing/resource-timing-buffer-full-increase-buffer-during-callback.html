@@ -2,7 +2,7 @@
 <html>
 <head onload>
 <meta charset="utf-8" />
-<title>This test validates the behavior of read and clear operation in onresourcetimingbufferfull callback of resource timing.</title>
+<title>This test validates increasing the buffer in onresourcetimingbufferfull callback of resource timing.</title>
 <link rel="author" title="Intel" href="http://www.intel.com/" />
 <link rel="help" href="http://www.w3.org/TR/resource-timing/#performanceresourcetiming"/>
 <script src="/resources/testharness.js"></script>
@@ -12,15 +12,10 @@
 <script>
     const resource_timing_buffer_size = 1;
     performance.clearResourceTimings();
-    let global_buffer = [];
-    let store_and_clear = function() {
-        const entryList = performance.getEntriesByType('resource');
-        entryList.forEach(function (entry) {
-            global_buffer.push(entry);
-        });
-        performance.clearResourceTimings();
+    var increase = function() {
+        performance.setResourceTimingBufferSize(resource_timing_buffer_size * 2);
     }
-    performance.addEventListener('resourcetimingbufferfull', store_and_clear);
+    performance.addEventListener('resourcetimingbufferfull', increase);
     performance.setResourceTimingBufferSize(resource_timing_buffer_size);
     // Scripts appended in JS to ensure setResourceTimingBufferSize is called before.
     function appendScript(src) {
@@ -36,11 +31,10 @@
     setup({ explicit_done: true });
     function onload_test() {
         test(function() {
-            assert_equals(performance.getEntriesByType('resource').length, 1,
-                          "Only the last entry should be stored in resource timing buffer since it's cleared once it overflows.");
-            assert_equals(global_buffer.length, 1, '1 resource timing entry should be moved to global buffer.');
-            assert_true(global_buffer[0].name.includes('empty.js'), "empty.js is in the global buffer");
-            assert_true(performance.getEntriesByType('resource')[0].name.includes('empty_script.js'), "empty_script.js is in the entries buffer");
+            assert_equals(performance.getEntriesByType('resource').length, 2,
+                          'Both entries should be stored in resource timing buffer since its increases size once it overflows.');
+            assert_true(performance.getEntriesByType('resource')[0].name.includes('empty.js'), "empty.js is in the entries buffer");
+            assert_true(performance.getEntriesByType('resource')[1].name.includes('empty_script.js'), "empty_script.js is in the entries buffer");
             done();
         });
     }
